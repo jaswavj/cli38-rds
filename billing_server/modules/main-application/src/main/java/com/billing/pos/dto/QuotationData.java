@@ -10,6 +10,7 @@ public class QuotationData {
     private String customerPhone;
     private Double payable;
     private Double extraDiscount;
+    private Double shipping;
     private Long customerId;
     private String date;
     private String time;

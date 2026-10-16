@@ -143,7 +143,7 @@ public class BillingReadService {
 
     public List<QuotationData> quotationList() {
         return jdbcTemplate.query(
-                "SELECT id, bill_display, cusName, cusPhn, payable, extraDisc, customerId, date, time " +
+                "SELECT id, bill_display, cusName, cusPhn, payable, extraDisc, shipping, customerId, date, time " +
                         "FROM prod_quotation WHERE is_cancelled = 0 AND is_billed = 0 " +
                         "ORDER BY date DESC, time DESC",
                 (rs, i) -> {
@@ -154,6 +154,7 @@ public class BillingReadService {
                     row.setCustomerPhone(rs.getString("cusPhn"));
                     row.setPayable(rs.getDouble("payable"));
                     row.setExtraDiscount(rs.getDouble("extraDisc"));
+                    row.setShipping(rs.getDouble("shipping"));
                     row.setCustomerId(rs.getLong("customerId"));
                     row.setDate(String.valueOf(rs.getDate("date")));
                     row.setTime(String.valueOf(rs.getTime("time")));
@@ -245,7 +246,7 @@ public class BillingReadService {
             throw new RuntimeException("Bill number is required");
         }
         List<EditBillLoadData> headers = jdbcTemplate.query(
-                "SELECT b.id, b.bill_display, b.cusName, b.cusPhn, b.customerId, b.is_tax_bill, b.extraDisc, " +
+                "SELECT b.id, b.bill_display, b.cusName, b.cusPhn, b.customerId, b.is_tax_bill, b.extraDisc, b.shipping, " +
                         "b.paymentMode, b.paymentType, b.balance, b.payable, " +
                         "IFNULL(pay.cash, 0) AS cash, IFNULL(pay.bank, 0) AS bank, " +
                         "IFNULL(c.name, '') AS cust_name, IFNULL(c.phone_number, '') AS phone, " +
@@ -267,6 +268,7 @@ public class BillingReadService {
                     data.setCustomerId(rs.wasNull() ? 0L : customerId);
                     data.setIsTaxBill(rs.getInt("is_tax_bill"));
                     data.setExtraDisc(rs.getDouble("extraDisc"));
+                    data.setShipping(rs.getDouble("shipping"));
                     data.setPaymentMode(rs.getInt("paymentMode"));
                     int payType = rs.getInt("paymentType");
                     data.setPaymentType(payType <= 0 ? 1 : payType);
@@ -363,7 +365,7 @@ public class BillingReadService {
 
     public PrintBillData printBill(String billNo) {
         List<PrintBillData> headers = jdbcTemplate.query(
-                "SELECT b.id, b.bill_display, b.cusName, b.cusPhn, b.DATE, b.TIME, b.total, b.prodDisc, b.extraDisc, " +
+                "SELECT b.id, b.bill_display, b.cusName, b.cusPhn, b.DATE, b.TIME, b.total, b.prodDisc, b.extraDisc, b.shipping, " +
                         "b.payable, b.paid, b.balance, b.paymentMode, b.paymentType, b.is_tax_bill, " +
                         "c.name AS cust_name, c.phone_number, c.address, c.gstin " +
                         "FROM prod_bill b LEFT JOIN customers c ON c.id = b.customerId " +
@@ -383,6 +385,7 @@ public class BillingReadService {
                     data.setPriceTotal(rs.getDouble("total"));
                     data.setProductDiscount(rs.getDouble("prodDisc"));
                     data.setExtraDiscount(rs.getDouble("extraDisc"));
+                    data.setShipping(rs.getDouble("shipping"));
                     data.setPayable(rs.getDouble("payable"));
                     data.setPaid(rs.getDouble("paid"));
                     data.setBalance(rs.getDouble("balance"));
@@ -439,7 +442,7 @@ public class BillingReadService {
 
     public PrintBillData printHold(Long quotId) {
         List<PrintBillData> headers = jdbcTemplate.query(
-                "SELECT q.id, q.bill_display, q.cusName, q.cusPhn, q.date, q.time, q.total, q.prodDisc, q.extraDisc, q.payable, " +
+                "SELECT q.id, q.bill_display, q.cusName, q.cusPhn, q.date, q.time, q.total, q.prodDisc, q.extraDisc, q.shipping, q.payable, " +
                         "c.name AS cust_name, c.phone_number, c.address, c.gstin " +
                         "FROM prod_quotation q LEFT JOIN customers c ON c.id = q.customerId " +
                         "WHERE q.id = ? AND q.is_cancelled = 0",
@@ -458,6 +461,7 @@ public class BillingReadService {
                     data.setPriceTotal(rs.getDouble("total"));
                     data.setProductDiscount(rs.getDouble("prodDisc"));
                     data.setExtraDiscount(rs.getDouble("extraDisc"));
+                    data.setShipping(rs.getDouble("shipping"));
                     data.setPayable(rs.getDouble("payable"));
                     data.setPaid(0d);
                     data.setBalance(rs.getDouble("payable"));

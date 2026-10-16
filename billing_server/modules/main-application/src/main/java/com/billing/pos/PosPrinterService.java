@@ -170,6 +170,9 @@ public class PosPrinterService {
         if (totals.extra > 0) {
             write(out, formatTotal("Extra Disc:", "-Rs " + DF.format(totals.extra), width));
         }
+        if (totals.shipping > 0) {
+            write(out, formatTotal("Shipping:", "Rs " + DF.format(totals.shipping), width));
+        }
         write(out, divider(width));
         write(out, BOLD_ON);
         write(out, formatTotal("TOTAL:", "Rs " + DF.format(totals.finalPaid), width));
@@ -209,6 +212,7 @@ public class PosPrinterService {
     private Totals appendItems(StringBuilder sb, PrintBillData bill, int width) {
         Totals totals = new Totals();
         totals.extra = n(bill.getExtraDiscount());
+        totals.shipping = n(bill.getShipping());
         if (bill.getItems() == null) {
             return totals;
         }
@@ -232,7 +236,7 @@ public class PosPrinterService {
                 sb.append(padLeft("Disc: -" + DF.format(disc), width)).append('\n');
             }
         }
-        totals.finalPaid = totals.amount - totals.extra;
+        totals.finalPaid = totals.amount - totals.extra + totals.shipping;
         return totals;
     }
 
@@ -337,6 +341,7 @@ public class PosPrinterService {
         double amount;
         double discount;
         double extra;
+        double shipping;
         double gst;
         double finalPaid;
         Map<Integer, Double> taxable = new HashMap<>();

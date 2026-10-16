@@ -16,6 +16,7 @@ const GstBillWisePage: React.FC = () => (
       { key: 'cgst', label: 'CGST', num: true, total: true },
       { key: 'sgst', label: 'SGST', num: true, total: true },
       { key: 'totalGst', label: 'Total GST', num: true, total: true },
+      { key: 'shipping', label: 'Shipping', num: true, total: true },
       { key: 'invoiceValue', label: 'Invoice Value', num: true, total: true },
     ]}
   />

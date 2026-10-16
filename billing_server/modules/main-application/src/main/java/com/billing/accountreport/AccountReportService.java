@@ -37,7 +37,7 @@ public class AccountReportService {
         long uid = userId == null ? 0 : userId;
         int tax = taxBill == null ? 0 : taxBill;
 
-        String sql = "SELECT a.bill_display, a.total, a.prodDisc + a.extraDisc AS discount, a.payable, a.paid, a.date, a.time, b.user_name, "
+        String sql = "SELECT a.bill_display, a.total, a.prodDisc + a.extraDisc AS discount, IFNULL(a.shipping, 0) AS shipping, a.payable, a.paid, a.date, a.time, b.user_name, "
                 + "a.id, CASE WHEN a.paymentMode = 3 THEN CONCAT('CASH & ', MAX(d.type)) ELSE MAX(d.type) END AS pay_type, "
                 + "SUM(c.cash) AS cash, SUM(c.bank) AS bank, a.balance, a.currentBalance, a.cusName, a.cusPhn "
                 + "FROM prod_bill a "
@@ -66,7 +66,7 @@ public class AccountReportService {
         } else if (tax == 2) {
             sql += "AND IFNULL(a.is_tax_bill, 0) = 0 ";
         }
-        sql += "GROUP BY a.id, a.bill_display, a.total, a.prodDisc, a.extraDisc, a.payable, a.paid, a.date, a.time, "
+        sql += "GROUP BY a.id, a.bill_display, a.total, a.prodDisc, a.extraDisc, a.shipping, a.payable, a.paid, a.date, a.time, "
                 + "b.user_name, a.balance, a.currentBalance, a.cusName, a.cusPhn, a.paymentMode";
 
         List<Map<String, Object>> bills = jdbcTemplate.query(sql, (rs, i) -> {
@@ -75,6 +75,7 @@ public class AccountReportService {
             row.put("billId", rs.getLong("id"));
             row.put("total", rs.getDouble("total"));
             row.put("discount", rs.getDouble("discount"));
+            row.put("shipping", rs.getDouble("shipping"));
             row.put("payable", rs.getDouble("payable"));
             row.put("paid", rs.getDouble("paid"));
             row.put("cash", rs.getDouble("cash"));
@@ -176,7 +177,7 @@ public class AccountReportService {
             throw new RuntimeException("Please select a customer");
         }
         return jdbcTemplate.query(
-                "SELECT a.id, a.bill_display, a.total, (a.prodDisc + a.extraDisc) AS totalDiscount, "
+                "SELECT a.id, a.bill_display, a.total, (a.prodDisc + a.extraDisc) AS totalDiscount, IFNULL(a.shipping, 0) AS shipping, "
                         + "a.payable, a.paid, a.balance, a.currentBalance, a.date, a.time, b.user_name "
                         + "FROM prod_bill a JOIN users b ON b.id = a.uid "
                         + "WHERE a.is_cancelled = 0 AND a.date BETWEEN ? AND ? AND a.customerId = ? "
@@ -187,6 +188,7 @@ public class AccountReportService {
                     row.put("billNo", nz(rs.getString("bill_display")));
                     row.put("total", rs.getDouble("total"));
                     row.put("discount", rs.getDouble("totalDiscount"));
+                    row.put("shipping", rs.getDouble("shipping"));
                     row.put("payable", rs.getDouble("payable"));
                     row.put("paid", rs.getDouble("paid"));
                     row.put("balance", rs.getDouble("balance"));
@@ -203,7 +205,7 @@ public class AccountReportService {
     public List<Map<String, Object>> salesByAttender(String from, String to, Long attenderId) {
         String fromDate = required(from, "From date is required");
         String toDate = required(to, "To date is required");
-        String sql = "SELECT a.bill_display, a.total, a.prodDisc + a.extraDisc AS discount, a.payable, a.paid, "
+        String sql = "SELECT a.bill_display, a.total, a.prodDisc + a.extraDisc AS discount, IFNULL(a.shipping, 0) AS shipping, a.payable, a.paid, "
                 + "a.date, a.time, a.cusName, a.currentBalance, IFNULL(att.name, 'No Attender') AS attender_name "
                 + "FROM prod_bill a LEFT JOIN attender att ON att.id = a.attender_id "
                 + "WHERE a.is_cancelled = 0 AND a.date BETWEEN ? AND ? ";
@@ -220,6 +222,7 @@ public class AccountReportService {
             row.put("billNo", nz(rs.getString("bill_display")));
             row.put("total", rs.getDouble("total"));
             row.put("discount", rs.getDouble("discount"));
+            row.put("shipping", rs.getDouble("shipping"));
             row.put("payable", rs.getDouble("payable"));
             row.put("paid", rs.getDouble("paid"));
             row.put("date", asStr(rs.getObject("date")));
@@ -260,6 +263,8 @@ public class AccountReportService {
                 + "WHERE a.is_cancelled = 0 AND a.date BETWEEN ? AND ?", fromDate, toDate);
         double discount = sum("SELECT COALESCE(SUM(a.extraDisc + a.prodDisc), 0) FROM prod_bill a JOIN prod_bill_payment b ON b.bill_id = a.id "
                 + "WHERE a.is_cancelled = 0 AND a.date BETWEEN ? AND ?", fromDate, toDate);
+        double shipping = sum("SELECT COALESCE(SUM(IFNULL(a.shipping, 0)), 0) FROM prod_bill a "
+                + "WHERE a.is_cancelled = 0 AND a.date BETWEEN ? AND ?", fromDate, toDate);
         double dueCash = sum("SELECT COALESCE(SUM(CASE WHEN a.mode = 1 THEN a.paid END), 0) FROM prod_bill_due_collection a WHERE a.date BETWEEN ? AND ?", fromDate, toDate);
         double dueBank = sum("SELECT COALESCE(SUM(CASE WHEN a.mode = 2 THEN a.paid END), 0) FROM prod_bill_due_collection a WHERE a.date BETWEEN ? AND ?", fromDate, toDate);
         double paymentTotal = cash + bank + due + discount;
@@ -268,6 +273,7 @@ public class AccountReportService {
         payments.put("cash", cash);
         payments.put("bank", bank);
         payments.put("discount", discount);
+        payments.put("shipping", shipping);
         payments.put("due", due);
         payments.put("total", paymentTotal);
 
@@ -281,7 +287,7 @@ public class AccountReportService {
         data.put("collectionTotal", collectionTotal);
         data.put("payments", payments);
         data.put("dueCollections", dueCollections);
-        data.put("difference", collectionTotal - paymentTotal);
+        data.put("difference", collectionTotal + shipping - paymentTotal);
         return data;
     }
 
@@ -346,7 +352,7 @@ public class AccountReportService {
                         + "WHEN a.paymentMode = 3 THEN 'Mixed' ELSE 'Paid' END, ' + Due') "
                         + "WHEN a.paymentMode = 1 THEN 'Cash' WHEN a.paymentMode = 2 THEN 'Bank' "
                         + "WHEN a.paymentMode = 3 THEN 'Mixed' ELSE '-' END AS sale_type, "
-                        + "COALESCE(a.cusName, '-') AS customer_name, a.payable "
+                        + "COALESCE(a.cusName, '-') AS customer_name, a.payable, IFNULL(a.shipping, 0) AS shipping "
                         + "FROM prod_bill a WHERE a.date BETWEEN ? AND ? ORDER BY a.date, a.time, a.bill_display",
                 (rs, i) -> {
                     Map<String, Object> row = new LinkedHashMap<>();
@@ -355,6 +361,7 @@ public class AccountReportService {
                     row.put("status", nz(rs.getString("bill_status")));
                     row.put("saleType", nz(rs.getString("sale_type")));
                     row.put("customer", nz(rs.getString("customer_name")));
+                    row.put("shipping", rs.getDouble("shipping"));
                     row.put("payable", rs.getDouble("payable"));
                     return row;
                 },
@@ -494,7 +501,7 @@ public class AccountReportService {
     public List<Map<String, Object>> gstSalesSummary(String from, String to) {
         String fromDate = required(from, "From date is required");
         String toDate = required(to, "To date is required");
-        return jdbcTemplate.query(
+        List<Map<String, Object>> rows = jdbcTemplate.query(
                 "SELECT a.gst AS gst_rate, SUM(a.total / (1 + a.gst / 100)) AS taxable_value, "
                         + "a.gst / 2 AS sgst_percent, SUM((a.total / (1 + a.gst / 100)) * a.gst / 200) AS sgst_amount, "
                         + "a.gst / 2 AS cgst_percent, SUM((a.total / (1 + a.gst / 100)) * a.gst / 200) AS cgst_amount, "
@@ -505,6 +512,22 @@ public class AccountReportService {
                 (rs, i) -> gstSummaryRow(rs),
                 fromDate, toDate
         );
+        double shipping = sum("SELECT COALESCE(SUM(IFNULL(shipping, 0)), 0) FROM prod_bill "
+                + "WHERE is_cancelled = 0 AND IFNULL(is_tax_bill, 0) = 1 AND date BETWEEN ? AND ?", fromDate, toDate);
+        if (shipping > 0) {
+            Map<String, Object> ship = new LinkedHashMap<>();
+            ship.put("gstRate", "Shipping");
+            ship.put("taxable", shipping);
+            ship.put("sgstPercent", 0);
+            ship.put("sgst", 0);
+            ship.put("cgstPercent", 0);
+            ship.put("cgst", 0);
+            ship.put("totalGst", 0);
+            ship.put("total", shipping);
+            ship.put("invoiceTotal", shipping);
+            rows.add(ship);
+        }
+        return rows;
     }
 
     public List<Map<String, Object>> gstBillWise(String from, String to) {
@@ -517,7 +540,8 @@ public class AccountReportService {
                         + "SUM((bd.total - bd.total / (1 + bd.gst / 100)) / 2) AS cgst, "
                         + "SUM((bd.total - bd.total / (1 + bd.gst / 100)) / 2) AS sgst, "
                         + "SUM(bd.total - bd.total / (1 + bd.gst / 100)) AS total_gst, "
-                        + "SUM(bd.total) AS invoice_value "
+                        + "SUM(bd.total) + MAX(IFNULL(b.shipping, 0)) AS invoice_value, "
+                        + "MAX(IFNULL(b.shipping, 0)) AS shipping "
                         + "FROM prod_bill b JOIN prod_bill_details bd ON b.id = bd.bill_id "
                         + "LEFT JOIN customers c ON b.customerId = c.id "
                         + "WHERE b.date BETWEEN ? AND ? AND b.is_cancelled = 0 AND bd.is_cancelled = 0 AND IFNULL(b.is_tax_bill, 0) = 1 "
@@ -533,6 +557,7 @@ public class AccountReportService {
                     row.put("cgst", rs.getDouble("cgst"));
                     row.put("sgst", rs.getDouble("sgst"));
                     row.put("totalGst", rs.getDouble("total_gst"));
+                    row.put("shipping", rs.getDouble("shipping"));
                     row.put("invoiceValue", rs.getDouble("invoice_value"));
                     return row;
                 },

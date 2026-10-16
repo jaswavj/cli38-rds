@@ -8,7 +8,7 @@ import ReportActions from './ReportActions';
 
 type BookRow = { category: string; inAmt: number; outAmt: number };
 type DetailRow = { category: string; cash: number; credit: number; bank: number; total: number };
-type SaleRow = { date: string; billNo: string; status: string; saleType: string; customer: string; payable: number };
+type SaleRow = { date: string; billNo: string; status: string; saleType: string; customer: string; shipping: number; payable: number };
 type ObRow = { id: number; balanceDate: string; amount: number; notes: string; userName: string; payMode: number; cashPaid: number; bankPaid: number };
 type BookData = {
   cashOpening: number; bankOpening: number; cashBook: BookRow[]; bankBook: BookRow[];
@@ -154,7 +154,7 @@ const DayBookPage: React.FC = () => {
               sheets={[
                 { name: 'Cash Book', columns: [{ key: 'category', label: 'Description' }, { key: 'inAmt', label: 'In', num: true }, { key: 'outAmt', label: 'Out', num: true }], rows: data?.cashBook || [] },
                 { name: 'Bank Book', columns: [{ key: 'category', label: 'Description' }, { key: 'inAmt', label: 'In', num: true }, { key: 'outAmt', label: 'Out', num: true }], rows: data?.bankBook || [] },
-                { name: 'Sales', columns: [{ key: 'date', label: 'Date' }, { key: 'billNo', label: 'Bill No' }, { key: 'status', label: 'Status' }, { key: 'saleType', label: 'Type' }, { key: 'customer', label: 'Customer' }, { key: 'payable', label: 'Payable', num: true }], rows: data?.sales || [] },
+                { name: 'Sales', columns: [{ key: 'date', label: 'Date' }, { key: 'billNo', label: 'Bill No' }, { key: 'status', label: 'Status' }, { key: 'saleType', label: 'Type' }, { key: 'customer', label: 'Customer' }, { key: 'shipping', label: 'Shipping', num: true }, { key: 'payable', label: 'Payable', num: true }], rows: data?.sales || [] },
               ]}
             />
           </div>
@@ -278,9 +278,9 @@ const DayBookPage: React.FC = () => {
             <div className="mst-card-h">4. Sales Details</div>
             <div className="mst-table-wrap">
               <table className="mst-table">
-                <thead><tr><th>#</th><th>Date</th><th>Bill No</th><th>Status</th><th>Type</th><th>Customer</th><th className="num">Payable</th></tr></thead>
+                <thead><tr><th>#</th><th>Date</th><th>Bill No</th><th>Status</th><th>Type</th><th>Customer</th><th className="num">Shipping</th><th className="num">Payable</th></tr></thead>
                 <tbody>
-                  {data.sales.length === 0 && <tr><td colSpan={7} className="mst-empty">No sales.</td></tr>}
+                  {data.sales.length === 0 && <tr><td colSpan={8} className="mst-empty">No sales.</td></tr>}
                   {data.sales.map((row, i) => (
                     <tr
                       key={`${row.billNo}-${i}`}
@@ -293,6 +293,7 @@ const DayBookPage: React.FC = () => {
                       <td style={{ color: row.status === 'Cancelled' ? '#991b1b' : '#166534', fontWeight: row.status === 'Cancelled' ? 700 : 400 }}>{row.status}</td>
                       <td>{row.saleType}</td>
                       <td>{row.customer}</td>
+                      <td className="num">{n2(row.shipping)}</td>
                       <td className="num">{n2(row.payable)}</td>
                     </tr>
                   ))}

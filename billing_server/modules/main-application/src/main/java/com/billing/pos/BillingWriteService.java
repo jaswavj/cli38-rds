@@ -6,6 +6,7 @@ import com.billing.pos.dto.HoldBillRequest;
 import com.billing.pos.dto.SaveBillRequest;
 import com.billing.pos.dto.SaveBillResponse;
 import lombok.RequiredArgsConstructor;
+import jakarta.annotation.PostConstruct;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -28,6 +29,28 @@ public class BillingWriteService {
     private final JdbcTemplate jdbcTemplate;
     private final BillingReadService readService;
     private final AdminService adminService;
+
+    @PostConstruct
+    public void ensureShippingColumn() {
+        ensureShippingColumn("prod_bill");
+        ensureShippingColumn("prod_quotation");
+    }
+
+    private void ensureShippingColumn(String table) {
+        try {
+            Integer found = jdbcTemplate.query(
+                    "SELECT COUNT(*) FROM information_schema.COLUMNS " +
+                            "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = 'shipping'",
+                    rs -> rs.next() ? rs.getInt(1) : 0,
+                    table
+            );
+            if (found == null || found == 0) {
+                jdbcTemplate.execute("ALTER TABLE " + table + " ADD COLUMN shipping DOUBLE(10,3) NOT NULL DEFAULT 0");
+            }
+        } catch (Exception ignored) {
+            // older databases keep working until the column can be added
+        }
+    }
 
     @Transactional
     public SaveBillResponse saveBill(SaveBillRequest request, Long uid) {
@@ -52,8 +75,8 @@ public class BillingWriteService {
         jdbcTemplate.update(con -> {
             PreparedStatement ps = con.prepareStatement(
                     "INSERT INTO prod_bill (bill_display, total, extraDisc, payable, paid, uid, DATE, TIME, cusName, prodDisc, cusPhn, " +
-                            "paymentMode, paymentType, balance, is_balance, currentBalance, customerId, price_category, attender_id, is_tax_bill) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            "paymentMode, paymentType, balance, is_balance, currentBalance, customerId, price_category, attender_id, is_tax_bill, shipping) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     Statement.RETURN_GENERATED_KEYS
             );
             ps.setString(1, billNo);
@@ -82,6 +105,7 @@ public class BillingWriteService {
                 ps.setNull(17, java.sql.Types.INTEGER);
             }
             ps.setInt(18, isTaxBill);
+            ps.setDouble(19, nz(request.getShipping()));
             return ps;
         }, keyHolder);
         long billId = requireGeneratedId(keyHolder);
@@ -150,8 +174,8 @@ public class BillingWriteService {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(con -> {
             PreparedStatement ps = con.prepareStatement(
-                    "INSERT INTO prod_quotation (bill_display, total, prodDisc, extraDisc, payable, cusName, cusPhn, customerId, date, time, uid, is_billed, is_cancelled) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, 0, 0)",
+                    "INSERT INTO prod_quotation (bill_display, total, prodDisc, extraDisc, payable, cusName, cusPhn, customerId, date, time, uid, is_billed, is_cancelled, shipping) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, 0, 0, ?)",
                     Statement.RETURN_GENERATED_KEYS
             );
             ps.setString(1, quotNo);
@@ -167,6 +191,7 @@ public class BillingWriteService {
                 ps.setNull(8, java.sql.Types.INTEGER);
             }
             ps.setLong(9, uid);
+            ps.setDouble(10, nz(request.getShipping()));
             return ps;
         }, keyHolder);
         long quotId = requireGeneratedId(keyHolder);
@@ -193,7 +218,7 @@ public class BillingWriteService {
         }
         String quotNo = existing.get(0);
         jdbcTemplate.update(
-                "UPDATE prod_quotation SET total=?, prodDisc=?, extraDisc=?, payable=?, cusName=?, cusPhn=?, customerId=?, date=NOW(), time=NOW(), uid=? " +
+                "UPDATE prod_quotation SET total=?, prodDisc=?, extraDisc=?, payable=?, cusName=?, cusPhn=?, customerId=?, date=NOW(), time=NOW(), uid=?, shipping=? " +
                         "WHERE id=?",
                 nz(request.getPriceTotal()),
                 nz(request.getDiscountTotal()),
@@ -203,6 +228,7 @@ public class BillingWriteService {
                 blankToDash(request.getCustomerPhn()),
                 request.getCustomerId() != null && request.getCustomerId() > 0 ? request.getCustomerId() : null,
                 uid,
+                nz(request.getShipping()),
                 quotId
         );
         jdbcTemplate.update("UPDATE prod_quotation_details SET is_cancelled = 1 WHERE quot_id = ?", quotId);
@@ -334,7 +360,7 @@ public class BillingWriteService {
         jdbcTemplate.update(
                 "UPDATE prod_bill SET total = ?, extraDisc = ?, payable = ?, paid = ?, cusName = ?, prodDisc = ?, cusPhn = ?, " +
                         "paymentMode = ?, paymentType = ?, balance = ?, is_balance = ?, currentBalance = ?, customerId = ?, " +
-                        "price_category = ?, attender_id = ?, is_tax_bill = ? WHERE id = ?",
+                        "price_category = ?, attender_id = ?, is_tax_bill = ?, shipping = ? WHERE id = ?",
                 nz(request.getPriceTotal()),
                 nz(request.getFinalDiscount()),
                 payableAmt,
@@ -351,6 +377,7 @@ public class BillingWriteService {
                 priceCategory,
                 request.getAttenderId() != null && request.getAttenderId() > 0 ? request.getAttenderId() : null,
                 isTaxBill,
+                nz(request.getShipping()),
                 billId
         );
 

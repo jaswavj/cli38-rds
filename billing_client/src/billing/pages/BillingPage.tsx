@@ -104,6 +104,7 @@ const BillingPage: React.FC = () => {
 
   const [lines, setLines] = useState<Line[]>([]);
   const [extraDisc, setExtraDisc] = useState('0');
+  const [shipping, setShipping] = useState('0');
   const [mode, setMode] = useState('1');
   const [payType, setPayType] = useState('1');
   const [cashPaid, setCashPaid] = useState('0');
@@ -194,6 +195,7 @@ const BillingPage: React.FC = () => {
         setCustomerId(data.customerId || 0);
         setIsTaxBill(data.isTaxBill === 1);
         setExtraDisc(String(data.extraDisc || 0));
+        setShipping(String(data.shipping || 0));
         setMode(String(data.paymentMode || 1));
         setPayType(String(data.paymentType || 1));
         setCashPaid(money(data.cashPaid || 0));
@@ -217,7 +219,8 @@ const BillingPage: React.FC = () => {
   }, [lines]);
 
   const extra = parseFloat(extraDisc) || 0;
-  const payable = Math.max(0, totals.grandTotal - extra);
+  const shippingAmt = Math.max(0, parseFloat(shipping) || 0);
+  const payable = Math.max(0, totals.grandTotal - extra + shippingAmt);
   const cashAmt = parseFloat(cashPaid) || 0;
   const bankAmt = parseFloat(bankPaid) || 0;
   const paidAmt = cashAmt + bankAmt;
@@ -520,6 +523,7 @@ const BillingPage: React.FC = () => {
     priceCategory: 3,
     isTaxBill: isTaxBill ? 1 : 0,
     finalDiscount: extra,
+    shipping: shippingAmt,
     payableAmount: payable,
     grandTotal: totals.grandTotal,
     priceTotal: totals.priceTotal,
@@ -641,6 +645,7 @@ const BillingPage: React.FC = () => {
     setCustomerPhone(dashToEmpty(row.customerPhone));
     setCustomerId(row.customerId || 0);
     setExtraDisc(String(row.extraDiscount || 0));
+    setShipping(String(row.shipping || 0));
     setHoldOpen(false);
     toast.info(mode === 'edit' ? `Editing hold ${row.billDisplay}` : 'Hold loaded into bill');
   };
@@ -1194,6 +1199,14 @@ const BillingPage: React.FC = () => {
                     className="pos-inp"
                     value={extraDisc}
                     onChange={(e) => { setExtraDisc(e.target.value); setBypassCap(false); }}
+                  />
+                </div>
+                <div className="pos-save-stat pos-save-edit">
+                  <span>Shipping</span>
+                  <input
+                    className="pos-inp"
+                    value={shipping}
+                    onChange={(e) => setShipping(e.target.value)}
                   />
                 </div>
                 <div className="pos-save-payable">

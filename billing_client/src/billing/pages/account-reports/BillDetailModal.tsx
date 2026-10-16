@@ -12,7 +12,7 @@ type Line = {
 type Pay = { date: string; mode: string; method: string; paid: number; balance: number };
 type Bill = {
   billDisplay: string; customerName?: string; customerPhone?: string; customerAddress?: string; customerGstin?: string;
-  date: string; time: string; priceTotal: number; productDiscount: number; extraDiscount: number;
+  date: string; time: string; priceTotal: number; productDiscount: number; extraDiscount: number; shipping: number;
   payable: number; paid: number; balance: number; cashPaid?: number; bankPaid?: number;
   items: Line[]; payments: Pay[];
 };
@@ -90,6 +90,7 @@ const BillDetailModal: React.FC<Props> = ({ billNo, onClose }) => {
               <div className="mst-fg"><label>Total</label><input className="mst-inp" readOnly value={n2(bill.priceTotal)} /></div>
               <div className="mst-fg"><label>Product Disc</label><input className="mst-inp" readOnly value={n2(bill.productDiscount)} /></div>
               <div className="mst-fg"><label>Extra Disc</label><input className="mst-inp" readOnly value={n2(bill.extraDiscount)} /></div>
+              <div className="mst-fg"><label>Shipping</label><input className="mst-inp" readOnly value={n2(bill.shipping)} /></div>
               <div className="mst-fg"><label>Payable</label><input className="mst-inp" readOnly value={n2(bill.payable)} /></div>
               <div className="mst-fg"><label>Paid</label><input className="mst-inp" readOnly value={n2(bill.paid)} /></div>
               <div className="mst-fg"><label>Balance</label><input className="mst-inp" readOnly value={n2(bill.balance)} /></div>

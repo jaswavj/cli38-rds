@@ -14,6 +14,7 @@ public class SaveBillRequest {
     private Long attenderId;
     private Integer isTaxBill = 1;
     private Double finalDiscount;
+    private Double shipping;
     private Double payableAmount;
     private Double grandTotal;
     private Double priceTotal;

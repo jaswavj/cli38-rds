@@ -11,7 +11,7 @@ type Cat = { id: number; name: string; amount: number };
 type Data = {
   categories: Cat[];
   collectionTotal: number;
-  payments: { cash: number; bank: number; discount: number; due: number; total: number };
+  payments: { cash: number; bank: number; discount: number; shipping: number; due: number; total: number };
   dueCollections: { cash: number; bank: number; total: number };
   difference: number;
   details?: any[];
@@ -70,7 +70,8 @@ const DayAccountPage: React.FC = () => {
                   name: 'Payments',
                   columns: [
                     { key: 'cash', label: 'Cash', num: true }, { key: 'bank', label: 'Bank', num: true },
-                    { key: 'discount', label: 'Discount', num: true }, { key: 'due', label: 'Due', num: true },
+                    { key: 'discount', label: 'Discount', num: true }, { key: 'shipping', label: 'Shipping', num: true },
+                    { key: 'due', label: 'Due', num: true },
                     { key: 'total', label: 'Total', num: true },
                   ],
                   rows: data ? [data.payments] : [],
@@ -112,6 +113,7 @@ const DayAccountPage: React.FC = () => {
                   <tr><td>Cash</td><td className="num">{n2(data.payments.cash)}</td></tr>
                   <tr><td>Bank</td><td className="num">{n2(data.payments.bank)}</td></tr>
                   <tr><td>Discount</td><td className="num">{n2(data.payments.discount)}</td></tr>
+                  <tr><td>Shipping</td><td className="num">{n2(data.payments.shipping)}</td></tr>
                   <tr><td>Due</td><td className="num">{n2(data.payments.due)}</td></tr>
                   <tr><td><strong>Total</strong></td><td className="num"><strong>{n2(data.payments.total)}</strong></td></tr>
                 </tbody>

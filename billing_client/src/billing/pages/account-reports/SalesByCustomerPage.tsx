@@ -9,7 +9,7 @@ import ReportActions from './ReportActions';
 
 type Opt = { id: number; name: string };
 type Row = {
-  billNo: string; total: number; discount: number; payable: number; paid: number;
+  billNo: string; total: number; discount: number; shipping: number; payable: number; paid: number;
   balance: number; pendingBalance: number; date: string; time: string; biller: string;
 };
 
@@ -60,7 +60,8 @@ const SalesByCustomerPage: React.FC = () => {
                 name: 'Sales',
                 columns: [
                   { key: 'billNo', label: 'Bill No' }, { key: 'total', label: 'Total', num: true },
-                  { key: 'discount', label: 'Discount', num: true }, { key: 'payable', label: 'Payable', num: true },
+                  { key: 'discount', label: 'Discount', num: true }, { key: 'shipping', label: 'Shipping', num: true },
+                  { key: 'payable', label: 'Payable', num: true },
                   { key: 'paid', label: 'Paid', num: true }, { key: 'balance', label: 'Balance', num: true },
                   { key: 'pendingBalance', label: 'Pending', num: true }, { key: 'date', label: 'Date' },
                   { key: 'time', label: 'Time' }, { key: 'biller', label: 'Biller' },
@@ -79,18 +80,19 @@ const SalesByCustomerPage: React.FC = () => {
               <thead>
                 <tr>
                   <th>#</th><th>Bill No</th><th className="num">Total</th><th className="num">Discount</th>
-                  <th className="num">Payable</th><th className="num">Paid</th><th className="num">Balance</th>
+                  <th className="num">Shipping</th><th className="num">Payable</th><th className="num">Paid</th><th className="num">Balance</th>
                   <th className="num">Pending</th><th>Date</th><th>Time</th><th>Biller</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 && <tr><td colSpan={11} className="mst-empty">No records.</td></tr>}
+                {rows.length === 0 && <tr><td colSpan={12} className="mst-empty">No records.</td></tr>}
                 {rows.map((row, i) => (
                   <tr key={`${row.billNo}-${i}`} className="mst-click-row" onClick={() => openBill(row.billNo)}>
                     <td>{i + 1}</td>
                     <td>{row.billNo}</td>
                     <td className="num">{n3(row.total)}</td>
                     <td className="num">{n3(row.discount)}</td>
+                    <td className="num">{n3(row.shipping)}</td>
                     <td className="num">{n3(row.payable)}</td>
                     <td className="num">{n3(row.paid)}</td>
                     <td className="num">{n3(row.balance)}</td>
@@ -105,6 +107,7 @@ const SalesByCustomerPage: React.FC = () => {
                     <td colSpan={2}><strong>Grand Total</strong></td>
                     <td className="num"><strong>{n3(sum(rows, 'total'))}</strong></td>
                     <td className="num"><strong>{n3(sum(rows, 'discount'))}</strong></td>
+                    <td className="num"><strong>{n3(sum(rows, 'shipping'))}</strong></td>
                     <td className="num"><strong>{n3(sum(rows, 'payable'))}</strong></td>
                     <td className="num"><strong>{n3(sum(rows, 'paid'))}</strong></td>
                     <td className="num"><strong>{n3(sum(rows, 'balance'))}</strong></td>

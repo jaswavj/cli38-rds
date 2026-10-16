@@ -13,6 +13,7 @@ public class EditBillLoadData {
     private Long customerId;
     private Integer isTaxBill;
     private Double extraDisc;
+    private Double shipping;
     private Integer paymentMode;
     private Integer paymentType;
     private Double cashPaid;

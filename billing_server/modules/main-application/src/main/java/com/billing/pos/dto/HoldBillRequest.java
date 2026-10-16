@@ -10,6 +10,7 @@ public class HoldBillRequest {
     private String customerPhn;
     private Long customerId;
     private Double finalDiscount;
+    private Double shipping;
     private Double payableAmount;
     private Double priceTotal;
     private Double discountTotal;

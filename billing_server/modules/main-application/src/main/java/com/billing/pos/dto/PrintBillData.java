@@ -18,6 +18,7 @@ public class PrintBillData {
     private Double priceTotal;
     private Double productDiscount;
     private Double extraDiscount;
+    private Double shipping;
     private Double payable;
     private Double paid;
     private Double balance;

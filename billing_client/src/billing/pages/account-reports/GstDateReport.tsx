@@ -68,7 +68,7 @@ const GstDateReport: React.FC<Props> = ({ title, icon, columns, fetchRows }) => 
                     <td>{i + 1}</td>
                     {columns.map((c) => (
                       <td key={c.key} className={c.num ? 'num' : undefined}>
-                        {c.num ? n2(row[c.key]) : (row[c.key] ?? '')}
+                        {c.num && typeof row[c.key] !== 'string' ? n2(row[c.key]) : (row[c.key] ?? '')}
                       </td>
                     ))}
                   </tr>
