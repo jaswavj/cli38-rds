@@ -11,6 +11,9 @@ public class SavePurchaseRequest {
     private String invoiceDate;
     private Integer payType;
     private Integer bankId;
+    private Integer paymentMode;
+    private Double cashPaid;
+    private Double bankPaid;
     private Double grandTotal;
     private Double paidAmount;
     private Double extraDisc;

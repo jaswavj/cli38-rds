@@ -177,11 +177,16 @@ public class InventoryService {
         if (request.getInvoiceDate() == null || request.getInvoiceDate().isBlank()) {
             throw new RuntimeException("Please select invoice date.");
         }
-        if (request.getPayType() == null || request.getPayType() == 0) {
+        Integer payType = request.getPayType();
+        int mode = request.getPaymentMode() == null ? (payType != null && payType == 1 ? 1 : 2) : request.getPaymentMode();
+        if (mode < 1 || mode > 3) {
             throw new RuntimeException("Please select payment mode.");
         }
-        if (request.getPayType() != 1 && (request.getBankId() == null || request.getBankId() == 0)) {
+        if (mode != 1 && (request.getBankId() == null || request.getBankId() == 0)) {
             throw new RuntimeException("Please select payment mode (Bank details).");
+        }
+        if (request.getPayType() == null || request.getPayType() == 0) {
+            throw new RuntimeException("Please select payment mode.");
         }
         if (request.getProducts() == null || request.getProducts().isEmpty()) {
             throw new RuntimeException("Please add at least one product with quantity.");
@@ -294,13 +299,16 @@ public class InventoryService {
             }
         }
 
-        int paymentMode = request.getPayType() == 1 ? 1 : 2;
-        double cashPaid = request.getPayType() == 1 ? paid : 0;
-        double bankPaid = request.getPayType() != 1 ? paid : 0;
+        int paymentMode = request.getPaymentMode() == null ? (request.getPayType() == 1 ? 1 : 2) : request.getPaymentMode();
+        double cashPaid = request.getCashPaid() != null ? nz(request.getCashPaid()) : (paymentMode == 2 ? 0 : paid);
+        double bankPaid = request.getBankPaid() != null ? nz(request.getBankPaid()) : (paymentMode == 1 ? 0 : paid);
+        if (paymentMode == 1) bankPaid = 0;
+        if (paymentMode == 2) cashPaid = 0;
+        int paymentType = paymentMode == 1 ? 0 : bankId;
         jdbcTemplate.update(
                 "INSERT INTO prod_ledger (bill_type, bill_id, customer_id, supplier_id, payment_mode, bill_amount, cash_paid, bank_paid, payment_type, uid, date_time) " +
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
-                5, purchaseId, null, request.getSupplierId(), paymentMode, grandTotal, cashPaid, bankPaid, request.getPayType(), uid
+                5, purchaseId, null, request.getSupplierId(), paymentMode, grandTotal, cashPaid, bankPaid, paymentType, uid
         );
         if (balance > 0) {
             addDueToSupplier(request.getSupplierId(), balance);

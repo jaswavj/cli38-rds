@@ -274,6 +274,31 @@
   background: color-mix(in srgb, var(--color-primary) 6%, transparent);
 }
 
+.pur-amt {
+  font-weight: 800;
+}
+
+.pur-amt-net {
+  color: var(--color-danger);
+}
+
+.pur-foot td {
+  background: color-mix(in srgb, var(--color-primary) 10%, #fff);
+  border-top: 2px solid var(--color-primary);
+  font-weight: 800;
+}
+
+.pur-sum {
+  color: var(--color-primary);
+  font-size: 14px;
+}
+
+.pur-sum-net {
+  color: var(--color-danger);
+  font-size: 15px;
+  background: color-mix(in srgb, var(--color-danger) 12%, #fff);
+}
+
 .mst-table tbody tr.mst-click-row {
   cursor: pointer;
 }
